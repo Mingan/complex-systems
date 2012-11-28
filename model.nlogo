@@ -33,7 +33,6 @@ end
 to go
   add-pedestrians
   walk
-  ;;plot-pedestrians
   tick
 end
 
@@ -61,17 +60,6 @@ to walk
       if pcolor = ped-color
         [ask myself [die]]
     ]
-  ]
-end
-
-to plot-pedestrians 
-  set-current-plot "pedestrians by destination"
-  
-  foreach destinations [
-    let clr item 0 ?
-    
-    set-current-plot-pen word "type " clr
-    plot count pedestrians with [color = clr]
   ]
 end
 @#$#@#$#@
@@ -150,9 +138,25 @@ NIL
 10.0
 true
 false
-"" ""
+"foreach destinations [\n    let clr item 0 ?\n    \n    create-temporary-plot-pen word \"type \" clr\n    set-current-plot-pen word \"type \" clr\n    set-plot-pen-color clr\n  ]" "foreach destinations [\n    let clr item 0 ?\n    \n    set-current-plot-pen word \"type \" clr\n    plot count pedestrians with [color = clr]\n  ]"
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
+
+PLOT
+847
+279
+1047
+429
+avg pedestrian age
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"foreach destinations [\n    let clr item 0 ?\n    \n    create-temporary-plot-pen word \"type \" clr\n    set-current-plot-pen word \"type \" clr\n    set-plot-pen-color clr\n  ]" ""
+PENS
 
 @#$#@#$#@
 ## WHAT IS IT?
