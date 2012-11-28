@@ -1,3 +1,54 @@
+breed [pedestrians pedestrian]
+
+globals [destinations]
+
+to setup
+  clear-all
+  setup-destinations
+  
+  reset-ticks
+end
+
+to setup-destinations
+  set destinations [
+    ;; color [x, y] [x, y]
+    [green -10 10 0 10]
+    [red -10 -10 0 -10]
+    [blue 2 5 2 5] 
+    [yellow 10 -7 12 -6]
+  ]
+  
+  foreach destinations [
+    ask patches with [
+      pxcor >= item 1 ? and 
+      pycor >= item 2 ? and
+      pxcor <= item 3 ? and
+      pycor <= item 4 ?
+    ] [set pcolor item 0 ?]
+  ]  
+end
+
+to go
+  add-pedestrians
+  walk
+  tick
+end
+
+to add-pedestrians
+  
+  foreach destinations [
+    let clr item 0 ?
+    ask one-of patches with [pcolor = clr] [
+      sprout-pedestrians random-poisson 3 [set color clr]
+    ]
+  ]
+end
+
+to walk
+  ask pedestrians [
+    fd 3
+  ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -20,11 +71,45 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
+
+BUTTON
+113
+61
+176
+94
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+113
+124
+176
+157
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
