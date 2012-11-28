@@ -1,6 +1,6 @@
 breed [pedestrians pedestrian]
 
-globals [destinations]
+globals [colors destinations]
 
 to setup
   clear-all
@@ -18,7 +18,9 @@ to setup-destinations
     [yellow 10 -7 12 -6]
   ]
   
+  set colors []
   foreach destinations [
+    set colors fput (item 0 ?) colors
     ask patches with [
       pxcor >= item 1 ? and 
       pycor >= item 2 ? and
@@ -38,15 +40,28 @@ to add-pedestrians
   
   foreach destinations [
     let clr item 0 ?
+    let other-clr clr
+    while [clr = other-clr] [
+      set other-clr one-of colors
+    ]
     ask one-of patches with [pcolor = clr] [
-      sprout-pedestrians random-poisson 3 [set color clr]
+      sprout-pedestrians random-poisson 3 [set color other-clr]
     ]
   ]
 end
 
 to walk
   ask pedestrians [
+    right random 360
     fd 3
+    let same-color false
+    ask patch-here [
+      set color white
+      ;;if [same-color]
+      ;;  [set same-color true]
+    ]
+    ;;if [same-color]
+    ;;  [die]
   ]
 end
 @#$#@#$#@
