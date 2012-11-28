@@ -53,7 +53,7 @@ to add-pedestrians
       set other-clr one-of colors
     ]
     ask one-of patches with [pcolor = clr] [
-      sprout-pedestrians random-poisson 3 [
+      sprout-pedestrians random-poisson 1 [
         set color other-clr
         set age 0
       ]
@@ -69,7 +69,7 @@ end
 
 to walk
   ask pedestrians [
-    right random 360
+    set heading direction-to-color self color
     fd 3
     
     let ped-color color
@@ -78,6 +78,10 @@ to walk
         [ask myself [die]]
     ]
   ]
+end
+
+to-report direction-to-color [pedestrian clr]
+  report towards min-one-of patches with [pcolor = clr] [distance pedestrian]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
