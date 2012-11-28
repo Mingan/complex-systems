@@ -2,9 +2,12 @@ breed [pedestrians pedestrian]
 
 globals [colors destinations]
 
+pedestrians-own [age]
+
 to setup
   clear-all
   setup-destinations
+  setup-pedestrians
   
   reset-ticks
 end
@@ -30,8 +33,13 @@ to setup-destinations
   ]  
 end
 
+to setup-pedestrians
+  create-pedestrians 0
+end
+
 to go
   add-pedestrians
+  age-pedestrians
   walk
   tick
 end
@@ -45,9 +53,18 @@ to add-pedestrians
       set other-clr one-of colors
     ]
     ask one-of patches with [pcolor = clr] [
-      sprout-pedestrians random-poisson 3 [set color other-clr]
+      sprout-pedestrians random-poisson 3 [
+        set color other-clr
+        set age 0
+      ]
     ]
   ]
+end
+
+to age-pedestrians
+  ask pedestrians [
+    set age age + 1
+  ]  
 end
 
 to walk
@@ -155,8 +172,9 @@ NIL
 10.0
 true
 false
-"foreach destinations [\n    let clr item 0 ?\n    \n    create-temporary-plot-pen word \"type \" clr\n    set-current-plot-pen word \"type \" clr\n    set-plot-pen-color clr\n  ]" ""
+"foreach destinations [\n    let clr item 0 ?\n    \n    create-temporary-plot-pen word \"type \" clr\n    set-current-plot-pen word \"type \" clr\n    set-plot-pen-color clr\n  ]" "foreach destinations [\n  let clr item 0 ?  \n  set-current-plot-pen word \"type \" clr\n    \n  let current-ped pedestrians with [color = clr]\n  ifelse any? current-ped\n    [plot mean [age] of current-ped]\n    [plot 0]\n]"
 PENS
+"pen-0" 1.0 0 -7500403 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
 
 @#$#@#$#@
 ## WHAT IS IT?
