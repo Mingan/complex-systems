@@ -33,6 +33,7 @@ end
 to go
   add-pedestrians
   walk
+  ;;plot-pedestrians
   tick
 end
 
@@ -54,14 +55,23 @@ to walk
   ask pedestrians [
     right random 360
     fd 3
-    let same-color false
+    
+    let ped-color color
     ask patch-here [
-      set color white
-      ;;if [same-color]
-      ;;  [set same-color true]
+      if pcolor = ped-color
+        [ask myself [die]]
     ]
-    ;;if [same-color]
-    ;;  [die]
+  ]
+end
+
+to plot-pedestrians 
+  set-current-plot "pedestrians by destination"
+  
+  foreach destinations [
+    let clr item 0 ?
+    
+    set-current-plot-pen word "type " clr
+    plot count pedestrians with [color = clr]
   ]
 end
 @#$#@#$#@
@@ -125,6 +135,24 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+845
+76
+1045
+226
+pedestrians by destination
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles"
 
 @#$#@#$#@
 ## WHAT IS IT?
