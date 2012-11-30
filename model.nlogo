@@ -1,11 +1,12 @@
 breed [pedestrians pedestrian]
 
-globals [colors destinations]
+globals [colors destinations walls pillars]
 
 pedestrians-own [age]
 
 to setup
   clear-all
+  setup-layout
   setup-destinations
   setup-pedestrians
   
@@ -15,10 +16,10 @@ end
 to setup-destinations
   set destinations [
     ;; color [x, y] [x, y]
-    [green -10 10 0 10]
-    [red -10 -10 0 -10]
-    [blue 2 5 2 5] 
-    [yellow 10 -7 12 -6]
+    [green -70 75 -60 75]
+    [red -130 22 -130 32]
+    [blue 110 22 110 32] 
+    [yellow 120 -75 130 -75]
   ]
   
   set colors []
@@ -83,28 +84,67 @@ end
 to-report direction-to-color [pedestrian clr]
   report towards min-one-of patches with [pcolor = clr] [distance pedestrian]
 end
+
+to setup-layout
+  ;; prepare white canvas
+  ask patches [
+   set pcolor white 
+  ]
+  
+  ;; draw all walls 
+  set walls [
+    ;; [x, y] [x, y]
+    [-10 52 -10 75]
+    [-10 15 -10 40]
+    [-10 -75 -10 3]
+  ]
+  
+  foreach walls [
+    ask patches with [
+      pxcor >= item 0 ? and 
+      pycor >= item 1 ? and
+      pxcor <= item 2 ? and
+      pycor <= item 3 ?
+    ] [set pcolor black]
+  ] 
+  
+  ;; draw all pillars
+  set pillars [
+    ;; [x0 y0] r
+    [-30 75 10]
+    [20 81 20]
+  ]
+  
+  foreach pillars [
+    ask patches with [
+      ( pxcor - item 0 ? ) ^ 2 + ( pycor - item 1 ? ) ^ 2 <= ( item 2 ? ) ^ 2 and
+      ( pxcor - item 0 ? ) ^ 2 + ( pycor - item 1 ? ) ^ 2 >= ( item 2 ? - 1 ) ^ 2
+    ] [set pcolor black]
+  ] 
+   
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-649
-470
-16
-16
-13.0
+30
+258
+823
+742
+130
+75
+3.0
 1
 10
 1
 1
 1
 0
+0
+0
 1
-1
-1
--16
-16
--16
-16
+-130
+130
+-75
+75
 1
 1
 1
