@@ -180,6 +180,23 @@ false
 PENS
 "pen-0" 1.0 0 -7500403 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
 
+BUTTON
+113
+180
+188
+213
+go once
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
+
 @#$#@#$#@
 ## WHAT IS IT?
 
