@@ -1,13 +1,22 @@
 breed [pedestrians pedestrian]
+breed [doors door]
 
 globals [colors destinations walls pillars]
 
 pedestrians-own [age]
+doors-own [
+  width ;; in patches
+  state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
+  steps ;; list of opening/closing steps for each tick in number of patches from the center to be opened/closed at given tick
+  current-step ;; interal indicator of current step
+  opened-for ;; time in ticks remaining before closing is started
+]
 
 to setup
   clear-all
   setup-layout
   setup-destinations
+  setup-doors
   setup-pedestrians
   
   reset-ticks
@@ -34,6 +43,40 @@ to setup-destinations
   ]  
 end
 
+to setup-doors
+  ;; manual setup of door
+  create-doors 1 [
+    set xcor -10
+    set ycor 46
+  ]
+  create-doors 1 [
+    set xcor -10
+    set ycor 9
+  ]
+  
+  ;; shared properties
+  ask doors [
+    ;; visual
+    set size 4
+    set shape "dot"
+    set color red
+    
+    set width 11 ;; todo
+    
+    set steps calculate-steps self ;; depends on width
+    set state 0
+    set current-step 0
+    
+    ;; paint door
+    let y ycor
+    let x xcor
+    let half-width ((width - 1) / 2)
+    ask patches with [pxcor = x and pycor >= floor(y - half-width) and pycor <= floor(y + half-width)] [
+      set pcolor grey
+    ]
+  ]
+end
+
 to setup-pedestrians
   create-pedestrians 0
 end
@@ -41,6 +84,7 @@ end
 to go
   add-pedestrians
   age-pedestrians
+  operate-doors
   walk
   tick
 end
@@ -57,6 +101,7 @@ to add-pedestrians
       sprout-pedestrians random-poisson 1 [
         set color other-clr
         set age 0
+        set size 6
       ]
     ]
   ]
@@ -92,21 +137,12 @@ to setup-layout
   ]
   
   ;; draw all walls 
-  set walls [
-    ;; [x, y] [x, y]
-    [-10 52 -10 75]
-    [-10 15 -10 40]
-    [-10 -75 -10 3]
-  ]
+  ask patches with [
+    pxcor = -10 and
+    pycor >= -75 and
+    pycor <= 75
+  ] [set pcolor black]
   
-  foreach walls [
-    ask patches with [
-      pxcor >= item 0 ? and 
-      pycor >= item 1 ? and
-      pxcor <= item 2 ? and
-      pycor <= item 3 ?
-    ] [set pcolor black]
-  ] 
   
   ;; draw all pillars
   set pillars [
@@ -123,12 +159,125 @@ to setup-layout
   ] 
    
 end
+
+;; is in charge of changing states and firing oeprations
+to operate-doors
+  ask doors [    
+    ifelse any? pedestrians with [distance myself <= [sensor-range] of myself]
+      ;; someone nearby
+      [
+        ;; if closed or closing start opening
+        if state = 0 or state = 3 [set state 1]
+      ]
+      
+      ;; noone nearby
+      [
+        ;; if opened start closing
+        if state = 2 [set state 3] 
+      ]
+    
+    ;; fire operations
+    if state = 1 [open-door self]
+    if state = 3 [close-door self]
+  ]
+end
+
+
+to open-door [door]
+  ;; number of patches (to each side from center) to open
+  let offset item current-step steps
+  ask patches with [pycor >= [ycor] of door - offset and pxcor = [xcor] of door and pycor <= ([ycor] of door + offset) and pcolor = grey] [
+    set pcolor white
+  ]
+        
+  ifelse (current-step + 1) = length steps 
+    ;; fully opened, start coundown
+    [
+      set state 2
+      set opened-for delay-before-closing
+    ]
+    ;; half way through
+    [set current-step current-step + 1]  
+end
+
+
+to close-door [door]
+  ;; countdown finished
+  ifelse opened-for = 0
+    [
+      let max-offset last steps ;; farthest patch of door
+      let offset 0 ;; offset is one step before or zero
+      if current-step > 0 [set offset item (current-step - 1) steps]
+      
+      ;; for resuse
+      let x-door xcor
+      let y-door floor ycor ;; deals with .5 position of door agent when width is even
+      
+      let correction 0 ;; correction on one side when width is even
+      if remainder width 2 = 0 [set correction 1]
+      
+      ask patches with [
+          (pxcor = x-door and pycor >= (y-door - max-offset + correction) and pycor <= (y-door - offset + correction))
+          or 
+          (pxcor = x-door and pycor >= (y-door + offset) and pycor <= (y-door + max-offset))
+      ] [
+        set pcolor grey
+      ]
+      
+      ifelse current-step = 0
+        [set state 0] ;; fully closed
+        [set current-step current-step - 1] ;; still closing
+    ]
+    ;; counting down
+    [
+      set opened-for opened-for - 1
+    ]
+end
+
+;; returns list of offset for door with given width and number of ticks
+to-report calculate-steps [door]
+  let half floor (width / 2) ;; calculates only for one side
+  let odd remainder width 2 ;; different treatment od even and odd sized door
+  let diff half / time-to-close  ;; diff between each tick
+  
+  let last-step 0
+  let output []
+  
+  ;; odd sized door
+  if odd = 1 [
+    set last-step round diff
+    ;; if door opens in more than one tick and diff is greater than one decrease the step so that it's centered
+    if time-to-close > 1 and last-step > 1 [set last-step last-step - odd]
+    
+    set output lput last-step output
+  ]
+  
+  ;; iterate for each tick
+  repeat time-to-close - odd [
+    set last-step round (last-step + diff)
+    set output lput last-step output
+  ]
+  
+  ;; when rounding leads to door that doesn't open completely bump up middle operation and all following
+  if last output < half [
+    let middle-item floor ((length output) / 2)
+    let inc middle-item
+    repeat (length output) - middle-item [
+      set output replace-item inc output (item inc output + 1)
+      set inc inc + 1
+    ]
+  ]
+  
+  report output
+end
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
-30
-258
-823
-742
+23
+264
+816
+748
 130
 75
 3.0
@@ -152,10 +301,10 @@ ticks
 30.0
 
 BUTTON
-113
-61
-176
-94
+110
+45
+173
+78
 NIL
 setup
 NIL
@@ -169,10 +318,10 @@ NIL
 1
 
 BUTTON
-113
-124
-176
-157
+110
+125
+173
+158
 NIL
 go
 T
@@ -221,10 +370,10 @@ PENS
 "pen-0" 1.0 0 -7500403 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
 
 BUTTON
-113
+105
+85
 180
-188
-213
+118
 go once
 go
 NIL
@@ -236,6 +385,51 @@ NIL
 NIL
 NIL
 0
+
+SLIDER
+220
+45
+410
+78
+delay-before-closing
+delay-before-closing
+0
+10
+0
+1
+1
+ticks
+HORIZONTAL
+
+SLIDER
+220
+90
+392
+123
+time-to-close
+time-to-close
+1
+22
+7
+1
+1
+ticks
+HORIZONTAL
+
+SLIDER
+222
+137
+394
+170
+sensor-range
+sensor-range
+3
+20
+3
+1
+1
+patches
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -598,5 +792,5 @@ Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 
 @#$#@#$#@
-0
+1
 @#$#@#$#@
