@@ -1,13 +1,12 @@
 breed [pedestrians pedestrian]
 breed [doors door]
 
-globals [colors destinations walls pillars]
+globals [colors destinations walls pillars steps]
 
 pedestrians-own [age]
 doors-own [
   width ;; in patches
   state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
-  steps ;; list of opening/closing steps for each tick in number of patches from the center to be opened/closed at given tick
   current-step ;; interal indicator of current step
   opened-for ;; time in ticks remaining before closing is started
 ]
@@ -16,6 +15,7 @@ to setup
   clear-all
   setup-layout
   setup-destinations
+  setup-steps
   setup-doors
   setup-pedestrians
   
@@ -44,14 +44,17 @@ to setup-destinations
 end
 
 to setup-doors
+  let corr 0
+  if door-width mod 2 = 0 [set corr -0.5]
+  
   ;; manual setup of door
   create-doors 1 [
     set xcor -10
-    set ycor 46
+    set ycor 46 + corr
   ]
   create-doors 1 [
     set xcor -10
-    set ycor 9
+    set ycor 9 + corr
   ]
   
   ;; shared properties
@@ -61,9 +64,8 @@ to setup-doors
     set shape "dot"
     set color red
     
-    set width 11 ;; todo
+    set width door-width
     
-    set steps calculate-steps self ;; depends on width
     set state 0
     set current-step 0
     
@@ -234,11 +236,19 @@ to close-door [door]
     ]
 end
 
-;; returns list of offset for door with given width and number of ticks
-to-report calculate-steps [door]
-  let half floor (width / 2) ;; calculates only for one side
-  let odd remainder width 2 ;; different treatment od even and odd sized door
+;; setups list of offset for door with given width and number of ticks
+to setup-steps
+  let half floor (door-width / 2) ;; calculates only for one side
+  let odd remainder door-width 2 ;; different treatment od even and odd sized door
   let diff half / time-to-close  ;; diff between each tick
+  
+  if (diff < 0.5 and half > 1) [
+    user-message (word "Number of ticks to open/close the door "
+                       "is too high. Widen the door or shorten "
+                       " the time for opening/closing.")
+    stop
+    clear-all
+  ]
   
   let last-step 0
   let output []
@@ -254,8 +264,10 @@ to-report calculate-steps [door]
   
   ;; iterate for each tick
   repeat time-to-close - odd [
-    set last-step round (last-step + diff)
-    set output lput last-step output
+    if last-step < half [
+      set last-step round (last-step + diff)
+      set output lput last-step output
+    ]
   ]
   
   ;; when rounding leads to door that doesn't open completely bump up middle operation and all following
@@ -268,9 +280,8 @@ to-report calculate-steps [door]
     ]
   ]
   
-  report output
+  set steps output
 end
-
 
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -410,7 +421,7 @@ time-to-close
 time-to-close
 1
 22
-7
+12
 1
 1
 ticks
@@ -425,10 +436,25 @@ sensor-range
 sensor-range
 3
 20
-3
+14
 1
 1
 patches
+HORIZONTAL
+
+SLIDER
+220
+180
+392
+213
+door-width
+door-width
+7
+25
+12
+1
+1
+NIL
 HORIZONTAL
 
 @#$#@#$#@
