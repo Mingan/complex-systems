@@ -24,11 +24,11 @@ end
 
 to setup-destinations
   set destinations [
-    ;; color [x, y] [x, y]
-    [green -70 68 -60 75]
-    [red -130 22 -123 32]
-    [blue 103 22 110 32] 
-    [yellow 120 -75 130 -68]
+    ;; color [x, y] [x, y] [allowed destinations]
+    [green -70 62 -60 75 [blue yellow]]
+    [red -130 22 -117 32 [blue yellow]]
+    [blue 97 22 110 32 [green red]] 
+    [yellow 120 -75 130 -62 [green red]]
   ]
   
   set colors []
@@ -92,15 +92,15 @@ to go
 end
 
 to add-pedestrians
+  let new-pedestrians-count random-poisson pedestrian-density
   
-  foreach destinations [
-    let clr item 0 ?
-    let other-clr clr
-    while [clr = other-clr] [
-      set other-clr one-of colors
-    ]
+  while [new-pedestrians-count > 0] [
+    let destination item (random length destinations) destinations
+
+    let clr item 0 destination
+    let other-clr one-of (item 5 destination)
     ask one-of patches with [pcolor = clr] [
-      sprout-pedestrians random-poisson 1 [
+      sprout-pedestrians 1 [
         set color other-clr
         set age 0
         set size 6
@@ -110,6 +110,8 @@ to add-pedestrians
         if speed > ((2 / 3) * 10 + 6) [set speed ((2 / 3) * 10 + 6)] ;; set top limit for speed
       ]
     ]
+    
+    set new-pedestrians-count new-pedestrians-count - 1
   ]
 end
 
@@ -286,7 +288,6 @@ to setup-steps
   
   set steps output
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 23
@@ -382,7 +383,7 @@ true
 false
 "foreach destinations [\n    let clr item 0 ?\n    \n    create-temporary-plot-pen word \"type \" clr\n    set-current-plot-pen word \"type \" clr\n    set-plot-pen-color clr\n  ]" "foreach destinations [\n  let clr item 0 ?  \n  set-current-plot-pen word \"type \" clr\n    \n  let current-ped pedestrians with [color = clr]\n  ifelse any? current-ped\n    [plot mean [age] of current-ped]\n    [plot 0]\n]"
 PENS
-"pen-0" 1.0 0 -7500403 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
+"pen-0" 1.0 0 -16448764 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
 
 BUTTON
 105
@@ -479,6 +480,21 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "plot (20 / 3)"
 "pen-1" 1.0 0 -5825686 true "" "ifelse any? pedestrians\n[plot mean [speed] of pedestrians]\n[plot 0]"
+
+SLIDER
+435
+45
+607
+78
+pedestrian-density
+pedestrian-density
+.25
+1
+0.7
+.05
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
