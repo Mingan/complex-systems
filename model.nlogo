@@ -3,7 +3,7 @@ breed [doors door]
 
 globals [colors destinations walls pillars steps]
 
-pedestrians-own [age]
+pedestrians-own [age speed]
 doors-own [
   width ;; in patches
   state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
@@ -25,10 +25,10 @@ end
 to setup-destinations
   set destinations [
     ;; color [x, y] [x, y]
-    [green -70 75 -60 75]
-    [red -130 22 -130 32]
-    [blue 110 22 110 32] 
-    [yellow 120 -75 130 -75]
+    [green -70 68 -60 75]
+    [red -130 22 -123 32]
+    [blue 103 22 110 32] 
+    [yellow 120 -75 130 -68]
   ]
   
   set colors []
@@ -104,6 +104,10 @@ to add-pedestrians
         set color other-clr
         set age 0
         set size 6
+        ;; 2/3 m/(half-second) ~= 4.8 km/h as a mean, 1 m = 10 patches
+        set speed (random-normal (2 / 3) .25) * 10
+        if speed < ((2 / 3) * 10 - 6) [set speed ((2 / 3) * 10 - 6)] ;; miniaml speed so that noone backs away
+        if speed > ((2 / 3) * 10 + 6) [set speed ((2 / 3) * 10 + 6)] ;; set top limit for speed
       ]
     ]
   ]
@@ -118,7 +122,7 @@ end
 to walk
   ask pedestrians [
     set heading direction-to-color self color
-    fd 3
+    fd speed
     
     let ped-color color
     ask patch-here [
@@ -421,7 +425,7 @@ time-to-close
 time-to-close
 1
 22
-12
+7
 1
 1
 ticks
@@ -456,6 +460,25 @@ door-width
 1
 NIL
 HORIZONTAL
+
+PLOT
+1110
+80
+1310
+230
+avg pedestrian speed
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot (20 / 3)"
+"pen-1" 1.0 0 -5825686 true "" "ifelse any? pedestrians\n[plot mean [speed] of pedestrians]\n[plot 0]"
 
 @#$#@#$#@
 ## WHAT IS IT?
