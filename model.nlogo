@@ -123,7 +123,23 @@ end
 
 to walk
   ask pedestrians [
-    set heading direction-to-color self color
+    let closest-doors-with-coords determine-closest-doors self
+    
+    ifelse color = blue or color = yellow [
+      ifelse xcor < -10 [
+        set heading towards item 0 closest-doors-with-coords
+      ] [
+        set heading direction-to-color self color
+      ]
+    ] [
+      ifelse xcor > -10 [
+        set heading towards item 0 closest-doors-with-coords
+      ] [
+        set heading direction-to-color self color
+      ]
+    ]
+    
+    
     fd speed
     
     let ped-color color
@@ -132,6 +148,42 @@ to walk
         [ask myself [die]]
     ]
   ]
+end
+
+;; return list where item 0 is the doors agent closest to pedestrian and next items are coords x and y
+to-report determine-closest-doors [pedestrian]
+  let closest-doors-x 0
+  let closest-doors-y 0
+  let closest-doors 0
+  let pedestrian-y get-pedestrian-ycor pedestrian
+  ask doors [
+    ifelse closest-doors-x = 0 and
+    closest-doors-y = 0 [
+      set closest-doors-x xcor
+      set closest-doors-y ycor
+      set closest-doors self
+    ][
+      let diff1 closest-doors-y - pedestrian-y
+      if diff1 < 0 [ set diff1 (- diff1) ]
+      let diff2 ycor - pedestrian-y
+      if diff2 < 0 [ set diff2 (- diff2) ]
+      if diff1 > diff2 [
+         set closest-doors-x xcor
+         set closest-doors-y ycor
+         set closest-doors self
+      ]
+    ]
+  ]
+  report (list closest-doors closest-doors-x closest-doors-y)
+end
+
+to-report get-pedestrian-ycor [pedestrian]
+  let pedestrian-ycor 0
+  ask pedestrian [
+    set pedestrian-ycor ycor 
+  ]
+  
+  report pedestrian-ycor
 end
 
 to-report direction-to-color [pedestrian clr]
@@ -490,7 +542,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.7
+0.25
 .05
 1
 NIL
