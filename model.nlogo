@@ -3,13 +3,14 @@ breed [doors door]
 
 globals [colors destinations walls pillars steps]
 
-pedestrians-own [age speed]
+pedestrians-own [age speed target-doors]
 doors-own [
   width ;; in patches
   state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
   current-step ;; interal indicator of current step
   opened-for ;; time in ticks remaining before closing is started
 ]
+patches-own [repulsion-level]
 
 to setup
   clear-all
@@ -123,24 +124,61 @@ end
 
 to walk
   ask pedestrians [
-    let closest-doors-with-coords determine-closest-doors self
+    ;;decrease-radius-repulsion self
+    if target-doors = 0 [
+      set target-doors determine-closest-doors self
+    ]
     
+    let direct 0;
+    
+    ;; determine direction (head to doors, head to target)
     ifelse color = blue or color = yellow [
       ifelse xcor < -10 [
-        set heading towards item 0 closest-doors-with-coords
+         set direct towards target-doors
       ] [
-        set heading direction-to-color self color
+        set direct direction-to-color self color
       ]
     ] [
       ifelse xcor > -10 [
-        set heading towards item 0 closest-doors-with-coords
+        set direct towards target-doors
       ] [
-        set heading direction-to-color self color
+        set direct direction-to-color self color
       ]
     ]
     
+    set heading direct
     
-    fd speed
+    let angle 20
+    let step 20
+    let max-check-radius 140
+    let zig 0
+    ;; if there is another pedestrian in 10 degrees radius
+    ;; try to turn right by 10 degrees - if there is a pedestrian too
+    ;; try to turn 20 degrees to the left
+    ;; try this method until maximum of 180 (90 deg to each side)
+    while [count pedestrians in-cone 20 step > 1 and 
+    angle < max-check-radius] [
+      ifelse zig = 0 [
+        rt angle
+        set zig 1
+        set angle angle + step
+      ] [
+        lt angle
+        set zig 0
+        set angle angle + step
+      ]
+      
+    ]
+    
+    ;; if there is no space on the 180 deg radius then wait
+    ifelse angle >= 180 [
+      set heading direct
+    ] [
+      fd speed
+    ]
+    
+    
+    ;;increase-radius-repulsion self
     
     let ped-color color
     ask patch-here [
@@ -150,31 +188,38 @@ to walk
   ]
 end
 
+to decrease-radius-repulsion [pedestrian]
+  let ped-x get-pedestrian-xcor pedestrian
+  let ped-y get-pedestrian-ycor pedestrian
+  
+  ask patches with [
+      distance pedestrian <= 5
+    ] [
+        if pcolor = white [
+          set repulsion-level repulsion-level - 1
+        ]
+    ]
+end
+
+
+to increase-radius-repulsion [pedestrian]
+  let ped-x get-pedestrian-xcor pedestrian
+  let ped-y get-pedestrian-ycor pedestrian
+  
+  ask patches with [
+      distance pedestrian <= 5
+    ] [
+        if pcolor = white [
+          set repulsion-level repulsion-level + 1
+        ]
+    ]
+end
+
 ;; return list where item 0 is the doors agent closest to pedestrian and next items are coords x and y
 to-report determine-closest-doors [pedestrian]
-  let closest-doors-x 0
-  let closest-doors-y 0
   let closest-doors 0
-  let pedestrian-y get-pedestrian-ycor pedestrian
-  ask doors [
-    ifelse closest-doors-x = 0 and
-    closest-doors-y = 0 [
-      set closest-doors-x xcor
-      set closest-doors-y ycor
-      set closest-doors self
-    ][
-      let diff1 closest-doors-y - pedestrian-y
-      if diff1 < 0 [ set diff1 (- diff1) ]
-      let diff2 ycor - pedestrian-y
-      if diff2 < 0 [ set diff2 (- diff2) ]
-      if diff1 > diff2 [
-         set closest-doors-x xcor
-         set closest-doors-y ycor
-         set closest-doors self
-      ]
-    ]
-  ]
-  report (list closest-doors closest-doors-x closest-doors-y)
+  ask pedestrian [ set closest-doors min-one-of doors [distance myself] ]
+  report closest-doors
 end
 
 to-report get-pedestrian-ycor [pedestrian]
@@ -186,6 +231,15 @@ to-report get-pedestrian-ycor [pedestrian]
   report pedestrian-ycor
 end
 
+to-report get-pedestrian-xcor [pedestrian]
+  let pedestrian-xcor 0
+  ask pedestrian [
+    set pedestrian-xcor xcor 
+  ]
+  
+  report pedestrian-xcor
+end
+
 to-report direction-to-color [pedestrian clr]
   report towards min-one-of patches with [pcolor = clr] [distance pedestrian]
 end
@@ -194,6 +248,7 @@ to setup-layout
   ;; prepare white canvas
   ask patches [
    set pcolor white 
+    set repulsion-level 0
   ]
   
   ;; draw all walls 
@@ -542,7 +597,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.25
+0.5
 .05
 1
 NIL
