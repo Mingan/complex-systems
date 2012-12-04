@@ -1,7 +1,7 @@
 breed [pedestrians pedestrian]
 breed [doors door]
 
-globals [colors destinations walls pillars steps]
+globals [colors destinations walls pillars steps pedestrian-radius]
 
 pedestrians-own [age speed target-doors]
 doors-own [
@@ -103,12 +103,14 @@ end
 
 to setup-pedestrians
   create-pedestrians 0
+  set pedestrian-radius 3
 end
 
 to go
   add-pedestrians
   age-pedestrians
   operate-doors
+  ask patches with [pcolor != white and pcolor != black and count pedestrians-here > 1] [show self]
   walk
   tick
 end
@@ -127,7 +129,7 @@ to add-pedestrians
       [set other-clr item 0 (item 5 start)]
       [set other-clr item 1 (item 5 start)]
       
-    ask one-of patches with [pcolor = clr] [
+    ask one-of patches with [pcolor = clr and far-enough? self] [
       sprout-pedestrians 1 [
         set color other-clr
         set age 0
@@ -141,6 +143,10 @@ to add-pedestrians
     
     set new-pedestrians-count new-pedestrians-count - 1
   ]
+end
+
+to-report far-enough? [here]
+  report count pedestrians with [distance here < pedestrian-radius] = 0
 end
 
 to age-pedestrians
@@ -624,7 +630,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.5
+1
 .05
 1
 NIL
