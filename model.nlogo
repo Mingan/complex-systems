@@ -1,9 +1,10 @@
+
 breed [pedestrians pedestrian]
 breed [doors door]
 
 globals [colors destinations walls pillars steps]
 
-pedestrians-own [age speed target-doors]
+pedestrians-own [age speed target-doors ticks-waiting]
 doors-own [
   width ;; in patches
   state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
@@ -147,36 +148,121 @@ to walk
     ]
     
     set heading direct
+        
     
-    let angle 20
-    let step 20
+    let angle 10
+    let step 10 ;; max angle rotation
     let max-check-radius 140
+     
     let zig 0
+    
+    let free-way-found false
     ;; if there is another pedestrian in 10 degrees radius
     ;; try to turn right by 10 degrees - if there is a pedestrian too
     ;; try to turn 20 degrees to the left
     ;; try this method until maximum of 180 (90 deg to each side)
-    while [count pedestrians in-cone 20 step > 1 and 
-    angle < max-check-radius] [
-      ifelse zig = 0 [
-        rt angle
-        set zig 1
-        set angle angle + step
+    
+    while [
+      free-way-found = false and
+      angle < max-check-radius
       ] [
-        lt angle
-        set zig 0
-        set angle angle + step
+      
+      ;; lookup bound is list [a b c] according to a line equation - ax + by + c = 0
+      let lookup-bounds get-lookup-bounds self
+      ;;show lookup-bounds
+      let line-bound1 item 0 lookup-bounds
+      let line-bound2 item 1 lookup-bounds
+      let x-bound1 xcor
+      let ped-ycor ycor
+      let x-bound2 0
+      let ahead  40
+      while [patch-ahead ahead = nobody and ahead > 0] [
+        set ahead ahead - 1 
+      ]
+      ask patch-ahead ahead [ set x-bound2 pxcor ]
+      
+      if item 2 line-bound1 < item 2 line-bound2 [
+       let temp line-bound1
+       set line-bound1 line-bound2
+       set line-bound2 temp
+      ]
+      
+      let obstr-peds-count 0
+      
+      
+      ask pedestrians in-cone 20 (max-check-radius + 30) [
+        if obstr-peds-count = 0 and
+        xcor != x-bound1 and
+        ycor != ped-ycor [
+         if (item 0 line-bound1 * xcor + item 1 line-bound1 * ycor + item 2 line-bound1 >= 0 and
+         item 0 line-bound2 * xcor + item 1 line-bound2 * ycor + item 2 line-bound2 <= 0 and
+         xcor > x-bound1 and
+         xcor < x-bound2) or 
+         (item 0 line-bound1 * xcor + item 1 line-bound1 * ycor + item 2 line-bound1 <= 0 and
+         item 0 line-bound2 * xcor + item 1 line-bound2 * ycor + item 2 line-bound2 >= 0 and
+         xcor > x-bound1 and
+         xcor < x-bound2) or
+         (item 0 line-bound1 * xcor + item 1 line-bound1 * ycor + item 2 line-bound1 >= 0 and
+         item 0 line-bound2 * xcor + item 1 line-bound2 * ycor + item 2 line-bound2 <= 0 and
+         xcor < x-bound1 and
+         xcor > x-bound2) or 
+         (item 0 line-bound1 * xcor + item 1 line-bound1 * ycor + item 2 line-bound1 <= 0 and
+         item 0 line-bound2 * xcor + item 1 line-bound2 * ycor + item 2 line-bound2 >= 0 and
+         xcor < x-bound1 and
+         xcor > x-bound2) [
+           set obstr-peds-count obstr-peds-count + 1
+         ]
+        ]
+      ]
+      
+      let no-obstacle true
+      let ahead-num int speed
+      repeat int speed [
+        let patch-color 0
+        if patch-ahead ahead-num != nobody [
+          ask patch-ahead ahead-num [
+            set patch-color pcolor
+          ]
+          if patch-color = black [
+            set no-obstacle false
+          ]
+          set ahead-num ahead-num - 1
+        ]
+      ]
+      
+      
+      ifelse obstr-peds-count = 0 and no-obstacle = true [
+       set free-way-found true 
+      ] [
+        ifelse zig = 0 [
+          rt angle
+          set zig 1
+          set angle angle + step
+        ] [
+          lt angle
+          set zig 0
+          set angle angle + step
+        ]
       ]
       
     ]
+      
+   
     
-    ;; if there is no space on the 180 deg radius then wait
-    ifelse angle >= 180 [
+    ;; if there is no space on the max deg radius then wait
+    ifelse angle >= max-check-radius [
+      ;;wait
       set heading direct
+      set ticks-waiting ticks-waiting + 1
+      
+      ;; if pedestian is waiting too long, he try to go to other doors
+      if ticks-waiting > 10 [
+        set target-doors get-other-doors self
+      ]
     ] [
       fd speed
+      set ticks-waiting 0
     ]
-    
     
     ;;increase-radius-repulsion self
     
@@ -188,31 +274,103 @@ to walk
   ]
 end
 
-to decrease-radius-repulsion [pedestrian]
-  let ped-x get-pedestrian-xcor pedestrian
-  let ped-y get-pedestrian-ycor pedestrian
-  
-  ask patches with [
-      distance pedestrian <= 5
-    ] [
-        if pcolor = white [
-          set repulsion-level repulsion-level - 1
-        ]
-    ]
+to-report get-other-doors [pedestrian] 
+  let current-doors [target-doors] of pedestrian
+  let current-doors-ycor [ycor] of current-doors
+  report one-of doors with [ycor != current-doors-ycor]
 end
 
-
-to increase-radius-repulsion [pedestrian]
-  let ped-x get-pedestrian-xcor pedestrian
-  let ped-y get-pedestrian-ycor pedestrian
+to-report get-lookup-bounds [pedestrian]
   
-  ask patches with [
-      distance pedestrian <= 5
-    ] [
-        if pcolor = white [
-          set repulsion-level repulsion-level + 1
-        ]
+  let left-line []
+  let right-line []
+  
+  ask pedestrian [
+    let width-add 4 ;; total width = 2 * width-add + 1
+    
+    let ped-coors []
+    let ped-xcor xcor
+    let ped-ycor ycor
+    let alpha heading
+    
+    
+    let ahead 20
+    while [patch-ahead ahead = nobody and ahead > 0] [
+      set ahead ahead - 1 
     ]
+    ask patch-ahead ahead [
+     let quadrant 1 ;; four quadrants. first is x > 0 and y > 0 and clock-wise
+     
+     ;; calculate angle beta
+     while [alpha > 90] [
+       set alpha alpha - 90
+       set quadrant quadrant + 1
+     ]
+     let beta 90 - alpha
+     
+     
+     ;; find out extentions according the width-add
+     let a cos beta * width-add
+     let b sin beta * width-add
+     
+     ;; for quadrant 1 and 3, switch a and be - since a is to be computed with y axis and b is to be computed with x axis
+     ;; for quadrant 1 and 3 there is xy: -+ +-, for quadrant 2 and for it is xy: -- ++
+     if quadrant = 1 or
+     quadrant = 3 [
+      let temp a
+      set a (- b)
+      set b temp
+     ]
+     set a int a
+     set b int b
+     
+     ;; create border coords for pedestrian
+     let left-first-xcor ped-xcor - a
+     let left-first-ycor ped-ycor - b
+     
+     let right-first-xcor ped-xcor + a
+     let right-first-ycor ped-ycor + b
+     
+     ;; create helper points to determine the line equation
+     let left-second-xcor pxcor - a
+     let left-second-ycor pycor - b
+     
+     let right-second-xcor pxcor + a
+     let right-second-ycor pycor + b
+     
+     
+     
+     ;;ask patches with [(pxcor = int left-first-xcor and pycor = int left-first-ycor) or 
+     ;;  (pxcor = int right-first-xcor and pycor = int right-first-ycor) or
+     ;;  (pxcor = int left-second-xcor and pycor = int left-second-ycor) or 
+     ;;  (pxcor = int right-second-xcor and pycor = int right-second-ycor) ] [set pcolor black]
+     
+     ;; determine direction vector u=(u-1;u-2), př.: u=(1;2)
+     let u-1 left-second-xcor - left-first-xcor
+     let u-2 left-second-ycor - left-first-ycor
+     
+     ;; determine normal vector n=(n-1;n-2), př.: n=(2;-1)
+     let n-1 u-2
+     let n-2 u-1
+     
+     ifelse n-1 >= 0 [
+      set n-2 (- n-2) 
+     ][
+      set n-1 (- n-1)
+     ]
+     
+     ;; determine c for both lines (constant)
+     let left-c ((- n-1) * left-first-xcor) - (n-2 * left-first-ycor)
+     let right-c ((- n-1) * right-first-xcor) - (n-2 * right-first-ycor)
+     
+     ;; set lines
+     set left-line (list n-1 n-2 left-c)
+     set right-line (list n-1 n-2 right-c)
+    ]
+        
+    
+  ]
+  report (list left-line right-line)
 end
 
 ;; return list where item 0 is the doors agent closest to pedestrian and next items are coords x and y
@@ -597,7 +755,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.5
+1
 .05
 1
 NIL
