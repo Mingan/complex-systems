@@ -2,7 +2,7 @@
 breed [pedestrians pedestrian]
 breed [doors door]
 
-globals [colors destinations walls pillars steps]
+globals [colors destinations walls pillars steps pedestrian-radius]
 
 pedestrians-own [age speed target-doors ticks-waiting]
 doors-own [
@@ -16,6 +16,7 @@ patches-own [repulsion-level]
 to setup
   clear-all
   setup-layout
+  setup-obstacles
   setup-destinations
   setup-steps
   setup-doors
@@ -24,13 +25,33 @@ to setup
   reset-ticks
 end
 
+to setup-obstacles
+  if obstacles = "inside" or obstacles = "both" [
+    ask patches with [ distance patch 5 46 <= 5] [
+      set pcolor black
+    ]
+    ask patches with [ distance patch 5 8 <= 5] [
+      set pcolor black
+    ]
+  ]
+  
+  if obstacles = "outside" or obstacles = "both" [
+    ask patches with [ distance patch -25 46 <= 5] [
+      set pcolor black
+    ]
+    ask patches with [ distance patch -25 8 <= 5] [
+      set pcolor black
+    ]
+  ]
+end
+
 to setup-destinations
   set destinations [
-    ;; color [x, y] [x, y] [allowed destinations]
-    [green -70 62 -60 75 [blue yellow]]
-    [red -130 22 -117 32 [blue yellow]]
+    ;; color [x, y] [x, y] [allowed destinations with probability distribution 8 : 2]
+    [green -70 62 -60 75 [pink blue]]
+    [red -130 22 -117 32 [pink blue]]
     [blue 97 22 110 32 [green red]] 
-    [yellow 120 -75 130 -62 [green red]]
+    [pink 120 -75 130 -62 [green red]]
   ]
   
   set colors []
@@ -83,12 +104,14 @@ end
 
 to setup-pedestrians
   create-pedestrians 0
+  set pedestrian-radius 3
 end
 
 to go
   add-pedestrians
   age-pedestrians
   operate-doors
+  ask patches with [pcolor != white and pcolor != black and count pedestrians-here > 1] [show self]
   walk
   tick
 end
@@ -97,11 +120,17 @@ to add-pedestrians
   let new-pedestrians-count random-poisson pedestrian-density
   
   while [new-pedestrians-count > 0] [
-    let destination item (random length destinations) destinations
+    let start item (random length destinations) destinations
 
-    let clr item 0 destination
-    let other-clr one-of (item 5 destination)
-    ask one-of patches with [pcolor = clr] [
+    let clr item 0 start
+    let other-clr 0
+    
+    ;; choose destination with distributin 8 : 2
+    ifelse random 100 < 80 
+      [set other-clr item 0 (item 5 start)]
+      [set other-clr item 1 (item 5 start)]
+      
+    ask one-of patches with [pcolor = clr and far-enough? self] [
       sprout-pedestrians 1 [
         set color other-clr
         set age 0
@@ -115,6 +144,10 @@ to add-pedestrians
     
     set new-pedestrians-count new-pedestrians-count - 1
   ]
+end
+
+to-report far-enough? [here]
+  report count pedestrians with [distance here < pedestrian-radius] = 0
 end
 
 to age-pedestrians
@@ -133,7 +166,7 @@ to walk
     let direct 0;
     
     ;; determine direction (head to doors, head to target)
-    ifelse color = blue or color = yellow [
+    ifelse color = blue or color = pink [
       ifelse xcor < -10 [
          set direct towards target-doors
       ] [
@@ -685,7 +718,7 @@ HORIZONTAL
 SLIDER
 220
 90
-392
+410
 123
 time-to-close
 time-to-close
@@ -698,10 +731,10 @@ ticks
 HORIZONTAL
 
 SLIDER
-222
-137
-394
-170
+220
+135
+410
+168
 sensor-range
 sensor-range
 3
@@ -715,13 +748,13 @@ HORIZONTAL
 SLIDER
 220
 180
-392
+410
 213
 door-width
 door-width
 7
 25
-12
+11
 1
 1
 NIL
@@ -747,9 +780,9 @@ PENS
 "pen-1" 1.0 0 -5825686 true "" "ifelse any? pedestrians\n[plot mean [speed] of pedestrians]\n[plot 0]"
 
 SLIDER
-435
+420
 45
-607
+592
 78
 pedestrian-density
 pedestrian-density
@@ -760,6 +793,16 @@ pedestrian-density
 1
 NIL
 HORIZONTAL
+
+CHOOSER
+425
+170
+563
+215
+obstacles
+obstacles
+"none" "inside" "outside" "both"
+3
 
 @#$#@#$#@
 ## WHAT IS IT?
