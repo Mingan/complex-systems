@@ -15,12 +15,33 @@ patches-own [repulsion-level]
 to setup
   clear-all
   setup-layout
+  setup-obstacles
   setup-destinations
   setup-steps
   setup-doors
   setup-pedestrians
   
   reset-ticks
+end
+
+to setup-obstacles
+  if obstacles = "inside" or obstacles = "both" [
+    ask patches with [ distance patch 5 46 <= 5] [
+      set pcolor black
+    ]
+    ask patches with [ distance patch 5 8 <= 5] [
+      set pcolor black
+    ]
+  ]
+  
+  if obstacles = "outside" or obstacles = "both" [
+    ask patches with [ distance patch -15 46 <= 5] [
+      set pcolor black
+    ]
+    ask patches with [ distance patch -15 8 <= 5] [
+      set pcolor black
+    ]
+  ]
 end
 
 to setup-destinations
@@ -527,7 +548,7 @@ HORIZONTAL
 SLIDER
 220
 90
-392
+410
 123
 time-to-close
 time-to-close
@@ -540,10 +561,10 @@ ticks
 HORIZONTAL
 
 SLIDER
-222
-137
-394
-170
+220
+135
+410
+168
 sensor-range
 sensor-range
 3
@@ -557,7 +578,7 @@ HORIZONTAL
 SLIDER
 220
 180
-392
+410
 213
 door-width
 door-width
@@ -589,9 +610,9 @@ PENS
 "pen-1" 1.0 0 -5825686 true "" "ifelse any? pedestrians\n[plot mean [speed] of pedestrians]\n[plot 0]"
 
 SLIDER
-435
+420
 45
-607
+592
 78
 pedestrian-density
 pedestrian-density
@@ -602,6 +623,16 @@ pedestrian-density
 1
 NIL
 HORIZONTAL
+
+CHOOSER
+425
+170
+563
+215
+obstacles
+obstacles
+"none" "inside" "outside" "both"
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
