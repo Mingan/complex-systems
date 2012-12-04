@@ -35,10 +35,10 @@ to setup-obstacles
   ]
   
   if obstacles = "outside" or obstacles = "both" [
-    ask patches with [ distance patch -15 46 <= 5] [
+    ask patches with [ distance patch -25 46 <= 5] [
       set pcolor black
     ]
-    ask patches with [ distance patch -15 8 <= 5] [
+    ask patches with [ distance patch -25 8 <= 5] [
       set pcolor black
     ]
   ]
@@ -46,11 +46,11 @@ end
 
 to setup-destinations
   set destinations [
-    ;; color [x, y] [x, y] [allowed destinations]
-    [green -70 62 -60 75 [blue yellow]]
-    [red -130 22 -117 32 [blue yellow]]
+    ;; color [x, y] [x, y] [allowed destinations with probability distribution 8 : 2]
+    [green -70 62 -60 75 [pink blue]]
+    [red -130 22 -117 32 [pink blue]]
     [blue 97 22 110 32 [green red]] 
-    [yellow 120 -75 130 -62 [green red]]
+    [pink 120 -75 130 -62 [green red]]
   ]
   
   set colors []
@@ -117,10 +117,16 @@ to add-pedestrians
   let new-pedestrians-count random-poisson pedestrian-density
   
   while [new-pedestrians-count > 0] [
-    let destination item (random length destinations) destinations
+    let start item (random length destinations) destinations
 
-    let clr item 0 destination
-    let other-clr one-of (item 5 destination)
+    let clr item 0 start
+    let other-clr 0
+    
+    ;; choose destination with distributin 8 : 2
+    ifelse random 100 < 80 
+      [set other-clr item 0 (item 5 start)]
+      [set other-clr item 1 (item 5 start)]
+      
     ask one-of patches with [pcolor = clr] [
       sprout-pedestrians 1 [
         set color other-clr
@@ -153,7 +159,7 @@ to walk
     let direct 0;
     
     ;; determine direction (head to doors, head to target)
-    ifelse color = blue or color = yellow [
+    ifelse color = blue or color = pink [
       ifelse xcor < -10 [
          set direct towards target-doors
       ] [
@@ -584,7 +590,7 @@ door-width
 door-width
 7
 25
-12
+11
 1
 1
 NIL
@@ -632,7 +638,7 @@ CHOOSER
 obstacles
 obstacles
 "none" "inside" "outside" "both"
-1
+3
 
 @#$#@#$#@
 ## WHAT IS IT?
