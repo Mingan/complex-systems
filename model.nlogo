@@ -829,10 +829,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot exits-count\nset exits-count 0"
 
 MONITOR
-670
-75
-790
-120
+615
+15
+735
+60
 exits per tick
 precision (exits-count-cumulative / ticks) 3
 17
@@ -840,23 +840,34 @@ precision (exits-count-cumulative / ticks) 3
 11
 
 MONITOR
-670
-135
-790
-180
+615
+75
+735
+120
 avg age of pedestrians
-round lifespan-cumulative / exits-count-cumulative
+precision (lifespan-cumulative / exits-count-cumulative) 2
 17
 1
 11
 
 MONITOR
-670
-190
-832
-235
+615
+130
+777
+175
 ratio of waiting pedestrians
 precision (count pedestrians with [ticks-waiting > 0] / count pedestrians) 2
+17
+1
+11
+
+MONITOR
+615
+185
+717
+230
+avg waiting time
+precision (waiting-cumulative / exits-count-cumulative) 2
 17
 1
 11
