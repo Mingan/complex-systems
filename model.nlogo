@@ -2,7 +2,7 @@
 breed [pedestrians pedestrian]
 breed [doors door]
 
-globals [colors destinations walls pillars steps pedestrian-radius]
+globals [colors destinations walls pillars steps pedestrian-radius exits-count exits-count-cumulative lifespan-cumulative waiting-cumulative]
 
 pedestrians-own [age speed target-doors ticks-waiting forced-wait-ticks]
 doors-own [
@@ -406,6 +406,7 @@ to walk
       set ticks-waiting ticks-waiting + 1
     ] [
       fd speed
+      set waiting-cumulative waiting-cumulative + ticks-waiting
       set ticks-waiting 0
     ]
     
@@ -414,7 +415,11 @@ to walk
     let ped-color color
     ask patch-here [
       if pcolor = ped-color
-        [ask myself [die]]
+        [
+          set lifespan-cumulative lifespan-cumulative + [age] of myself
+          set exits-count exits-count + 1
+          set exits-count-cumulative exits-count-cumulative + 1
+          ask myself [die]
     ]
     ]
   ]
@@ -830,7 +835,7 @@ time-to-close
 time-to-close
 1
 22
-7
+11
 1
 1
 ticks
@@ -860,7 +865,7 @@ door-width
 door-width
 7
 25
-8
+21
 1
 1
 NIL
@@ -909,6 +914,68 @@ obstacles
 obstacles
 "none" "inside" "outside" "both"
 0
+
+PLOT
+1085
+255
+1285
+405
+exits 
+NIL
+NIL
+0.0
+10.0
+0.0
+5.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot exits-count\nset exits-count 0"
+
+MONITOR
+615
+15
+735
+60
+exits per tick
+precision (exits-count-cumulative / ticks) 3
+17
+1
+11
+
+MONITOR
+615
+75
+735
+120
+avg age of pedestrians
+precision (lifespan-cumulative / exits-count-cumulative) 2
+17
+1
+11
+
+MONITOR
+615
+130
+777
+175
+ratio of waiting pedestrians
+precision (count pedestrians with [ticks-waiting > 0] / count pedestrians) 2
+17
+1
+11
+
+MONITOR
+615
+185
+717
+230
+avg waiting time
+precision (waiting-cumulative / exits-count-cumulative) 2
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
