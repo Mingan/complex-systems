@@ -10,9 +10,7 @@ doors-own [
   state ;; internally kept state: 0 = closed, 1 = opening, 2 = opened, 3 = closing
   current-step ;; interal indicator of current step
   opened-for ;; time in ticks remaining before closing is started
-  crowd-state ;; list [side1 side2] sides = number of ticks pedestrians should wait in distance
 ]
-patches-own [repulsion-level]
 
 to setup
   clear-all
@@ -28,19 +26,13 @@ end
 
 to setup-obstacles
   if obstacles = "inside" or obstacles = "both" [
-    ask patches with [ distance patch 10 46 <= 5] [
-      set pcolor black
-    ]
-    ask patches with [ distance patch 10 8 <= 5] [
+    ask patches with [ distance patch 10 46 <= 5 or distance patch 10 8 <= 5] [
       set pcolor black
     ]
   ]
   
   if obstacles = "outside" or obstacles = "both" [
-    ask patches with [ distance patch -35 46 <= 5] [
-      set pcolor black
-    ]
-    ask patches with [ distance patch -35 8 <= 5] [
+    ask patches with [ distance patch -35 46 <= 5 or distance patch -35 8 <= 5] [
       set pcolor black
     ]
   ]
@@ -100,7 +92,6 @@ to setup-doors
     ask patches with [pxcor = x and pycor >= floor(y - half-width) and pycor <= floor(y + half-width)] [
       set pcolor grey
     ]
-    set crowd-state [0 0]
   ]
 end
 
@@ -113,9 +104,7 @@ to go
   add-pedestrians
   age-pedestrians
   operate-doors
-  ask patches with [pcolor != white and pcolor != black and count pedestrians-here > 1] [show self]
   walk
-  check-crowd
   tick
 end
 
@@ -160,183 +149,83 @@ to age-pedestrians
   ]  
 end
 
-to check-crowd 
-ask doors [
-  
-  ;; decrement crowd-states
-  if item 0 crowd-state > 0 [
-   set crowd-state (list (item 0 crowd-state - 1) (item 1 crowd-state)) 
-  ]
-  
-  if item 1 crowd-state > 0 [
-   set crowd-state (list (item 0 crowd-state) (item 1 crowd-state - 1)) 
-  ]
-  
-  ;; if some pedestrian is waiting too long and
-  ;; the doors are on both sides in state 0 (flow)
-  if one-of pedestrians with [distance myself < 20 and ticks-waiting > 25 and determine-closest-doors self = myself] != nobody and
-  item 0 crowd-state = 0 and
-  item 1 crowd-state = 0 [
-    ;; crowd1 = crowd from the doors left side
-    let crowd1 pedestrians with [distance myself < 20 and xcor < 0]
-    ;; crowd2 = crowd from the doors right side
-    let crowd2 pedestrians with [distance myself < 20 and xcor > 0]
-    
-    ;; the bigger crowd will push through
-    ;; the smaller one will recede
-    ifelse count crowd1 > count crowd2 [
-      ask crowd2 [
-       ifelse ycor > [ycor] of myself [
-        set heading 225
-        bk 7 
-       ][
-        set heading 315
-        bk 7
-       ]
-      ]
-      set crowd-state [0 50]
-    ][
-      ask crowd1 [
-       ifelse ycor > [ycor] of myself [
-        set heading 135
-        bk 7 
-       ][
-        set heading 45
-        bk 7
-       ]
-      ]
-      set crowd-state [50 0]
-    ]
-    
-  ] 
-]
-end
-
 
 to walk
   ask pedestrians [
-    let continue true 
     
+    ;; set doors throug which the pedestrian intent to go
     if target-doors = 0 [
       set target-doors determine-closest-doors self
     ]
     
+    ;; direction angle
     let direct 0;
     
-    ;; determine direction (head to doors, head to target)
-    ifelse color = blue or color = pink [ ;; from left to right
-      
-      ;; if one doors are crowded from this side and the other ones are not
-      if [item 0 crowd-state] of target-doors > 0 and [item 0 crowd-state] of get-other-doors self = 0 [
-        set target-doors get-other-doors self
-      ]
-      
-      ;; if both doors are crowded from this side
-      ifelse [item 0 crowd-state] of target-doors > 0 and [item 0 crowd-state] of get-other-doors self > 0 [
-        
-        ;; in some distance the pedestrian will wait
-        if distance target-doors > 3 and distance target-doors < 15 [
-         set continue false 
-        ]
-        
-        ;; in longer distances he changes his target to waiting crowd (not directly the doors)
-        if distance target-doors > 10 and ycor > [ycor] of target-doors [
-         set direct towardsxy ([xcor] of target-doors - 5) ([ycor] of target-doors + 5)
-        ]
-        if distance target-doors > 10 and ycor < [ycor] of target-doors [
-         set direct towardsxy ([xcor] of target-doors - 5) ([ycor] of target-doors - 5)
-        ]
-      ] [
-        
-        ;; pedestrian continues in his direction (closest doors or his actual target)
-        ifelse xcor < -12 [
-          set direct towards target-doors
-        ] [
-          set direct direction-to-color self color
-        ]
-      ]
-    ] [ ;; from right to left
-
-      ;; if one doors are crowded from this side and the other ones are not
-      if [item 0 crowd-state] of target-doors > 0 and [item 0 crowd-state] of get-other-doors self = 0 [
-        set target-doors get-other-doors self
-      ]
-      
-      ;; if both doors are crowded from this side
-      ifelse [item 0 crowd-state] of target-doors > 0 and [item 0 crowd-state] of get-other-doors self > 0 [
-        
-        ;; in some distance the pedestrian will wait
-        if distance target-doors > 3 and distance target-doors < 15 [
-         set continue false 
-        ]
-        
-        ;; in longer distances he changes his target to waiting crowd (not directly the doors)
-        if distance target-doors > 10 and ycor > [ycor] of target-doors [
-         set direct towardsxy ([xcor] of target-doors + 5) ([ycor] of target-doors + 5)
-        ]
-        if distance target-doors > 10 and ycor < [ycor] of target-doors [
-         set direct towardsxy ([xcor] of target-doors + 5) ([ycor] of target-doors - 5)
-        ]
-      ] [
     
-        ;; pedestrian continues in his direction (closest doors or his actual target)
-        ifelse xcor > -8 [
+    ifelse color = blue or color = pink [    ;; pedestrian is walking from left to right
+      
+        ifelse xcor < -12 [ ;; pedestrian didn't go through the door yet
           set direct towards target-doors
-        ] [
+        ] [                                  ;; pedestrian have gone through the doors
           set direct direction-to-color self color
         ]
-      ]
+        
+    ] [ ;; pedestrian is walking from right to left
+
+      
+        ifelse xcor > -8 [                   ;; pedestrian didn't go through the door yet
+          set direct towards target-doors
+        ] [                                  ;; pedestrian have gone through the doors
+          set direct direction-to-color self color
+        ]
+        
     ]
     
     set heading direct
-    if continue = true [
     
-    let angle 10
+    
+    let angle 10 ;; first angle rotation
     let step 10 ;; max angle rotation
     let max-check-radius 180
      
     let zig 0
     
     let free-way-found false
+    
     ;; if there is another pedestrian in 10 degrees radius
     ;; try to turn right by 10 degrees - if there is a pedestrian too
     ;; try to turn 20 degrees to the left
     ;; try this method until maximum of 180 (90 deg to each side)
-    
-    while [
-      free-way-found = false and
-      angle < max-check-radius
-      ] [
+    while [ free-way-found = false and angle < max-check-radius ] [
       
       ;; lookup bound is list [a b c] according to a line equation - ax + by + c = 0
       let lookup-bounds get-lookup-bounds self
-      ;;show lookup-bounds
+      
+      ;; let the bounds be separated for better code reading
       let line-bound1 item 0 lookup-bounds
       let line-bound2 item 1 lookup-bounds
+      
+      ;; another restrictions for area to check
       let x-bound1 xcor
-      let ped-ycor ycor
       let x-bound2 0
+      
+      ;; how many patches ahead we are gonna check te path
       let ahead  40
 
+      ;; make sure the patch ahead really exists and then set the bound 2 variable
       while [patch-ahead ahead = nobody and ahead > 0] [
         set ahead ahead - 1 
       ]
             
       ask patch-ahead ahead [ set x-bound2 pxcor ]
-      
-      if item 2 line-bound1 < item 2 line-bound2 [
-       let temp line-bound1
-       set line-bound1 line-bound2
-       set line-bound2 temp
-      ]
-      
+            
       let obstr-peds-count 0
       
-      
+      ;; check the restricted area for another pedestrians
       ask pedestrians in-cone 20 (max-check-radius) [
         if obstr-peds-count = 0 and
         xcor != x-bound1 and
-        ycor != ped-ycor [
+        ycor != [ycor] of myself [
          if (item 0 line-bound1 * xcor + item 1 line-bound1 * ycor + item 2 line-bound1 >= 0 and
          item 0 line-bound2 * xcor + item 1 line-bound2 * ycor + item 2 line-bound2 <= 0 and
          xcor > x-bound1 and
@@ -358,9 +247,9 @@ to walk
         ]
       ]
       
+      ;; variable detecting obstacles (black patches and doors (green patches)
       let no-obstacle true
-      
-      
+     
       ;; checking of patches in a similar way as checking for obstructive pedestrians is not possible
       ;; because the algorithm is slow and cause some serious slowness in the animation
       ask patches in-cone 5 90 [
@@ -380,7 +269,7 @@ to walk
         
       ]
       
-      
+
       ifelse obstr-peds-count = 0 and no-obstacle = true [
        set free-way-found true 
       ] [
@@ -399,29 +288,28 @@ to walk
       
    
     
-    ;; if there is no space on the max deg radius then wait
-    ifelse angle >= max-check-radius [
+    
+    ifelse angle >= max-check-radius [          ;; if there is no space on the max deg radius
       ;;wait
       set heading direct
       set ticks-waiting ticks-waiting + 1
-    ] [
+    ] [                                         ;; free path found
       fd speed
       set waiting-cumulative waiting-cumulative + ticks-waiting
       set ticks-waiting 0
     ]
     
-    ;;increase-radius-repulsion self
     
-    let ped-color color
     ask patch-here [
-      if pcolor = ped-color
+      if pcolor = [color] of myself
         [
           set lifespan-cumulative lifespan-cumulative + [age] of myself
           set exits-count exits-count + 1
           set exits-count-cumulative exits-count-cumulative + 1
           ask myself [die]
+        ]
     ]
-    ]
+  
   ]
 end
 
@@ -432,19 +320,15 @@ to-report get-other-doors [pedestrian]
 end
 
 to-report get-lookup-bounds [pedestrian]
-  
+  ;; line bounds
   let left-line []
   let right-line []
   
   ask pedestrian [
     let width-add 4 ;; total width = 2 * width-add + 1
     
-    let ped-coors []
-    let ped-xcor xcor
-    let ped-ycor ycor
     let alpha heading
-    
-    
+        
     let ahead 20
     while [patch-ahead ahead = nobody and ahead > 0] [
       set ahead ahead - 1 
@@ -476,11 +360,11 @@ to-report get-lookup-bounds [pedestrian]
      set b int b
      
      ;; create border coords for pedestrian
-     let left-first-xcor ped-xcor - a
-     let left-first-ycor ped-ycor - b
+     let left-first-xcor [xcor] of myself - a
+     let left-first-ycor [ycor] of myself - b
      
-     let right-first-xcor ped-xcor + a
-     let right-first-ycor ped-ycor + b
+     let right-first-xcor [xcor] of myself + a
+     let right-first-ycor [ycor] of myself + b
      
      ;; create helper points to determine the line equation
      let left-second-xcor pxcor - a
@@ -524,41 +408,16 @@ to-report determine-closest-doors [pedestrian]
   report closest-doors
 end
 
-to-report get-pedestrian-ycor [pedestrian]
-  let pedestrian-ycor 0
-  ask pedestrian [
-    set pedestrian-ycor ycor 
-  ]
-  
-  report pedestrian-ycor
-end
-
-to-report get-pedestrian-xcor [pedestrian]
-  let pedestrian-xcor 0
-  ask pedestrian [
-    set pedestrian-xcor xcor 
-  ]
-  
-  report pedestrian-xcor
-end
-
 to-report direction-to-color [pedestrian clr]
   report towards min-one-of patches with [pcolor = clr] [distance pedestrian]
 end
 
 to setup-layout
   ;; prepare white canvas
-  ask patches [
-   set pcolor white 
-    set repulsion-level 0
-  ]
+  ask patches [ set pcolor white ]
   
   ;; draw all walls 
-  ask patches with [
-    pxcor = -10 and
-    pycor >= -75 and
-    pycor <= 75
-  ] [set pcolor black]
+  ask patches with [ pxcor = -10 and pycor >= -75 and pycor <= 75 ] [set pcolor black]
   
   
   ;; draw all pillars
@@ -850,7 +709,7 @@ sensor-range
 sensor-range
 3
 20
-8
+12
 1
 1
 patches
@@ -865,7 +724,7 @@ door-width
 door-width
 7
 25
-21
+16
 1
 1
 NIL
@@ -899,7 +758,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-1
+0.65
 .05
 1
 NIL
