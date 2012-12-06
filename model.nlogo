@@ -568,6 +568,10 @@ end
 to-report average-waiting-time
   report (waiting-cumulative / exits-count-cumulative)
 end
+
+to-report waiting-pedestrians-ratio
+  report (count pedestrians with [ticks-waiting > 0] / count pedestrians)
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 23
@@ -832,7 +836,7 @@ MONITOR
 777
 175
 ratio of waiting pedestrians
-precision (count pedestrians with [ticks-waiting > 0] / count pedestrians) 2
+precision waiting-pedestrians-ratio 2
 17
 1
 11
@@ -851,39 +855,80 @@ precision average-waiting-time 2
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+Tento model reprezetnuje obousměrný pěší provoz v oblasti severního východu z haly Hlavního nádraží v Praze skrze dvojici automatických dveří. Model zkoumá vliv chvoání dveří a hustoty dopravy na plynulost dopravy a tvorbu zácp.
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+Jeden patch odpovídá jednomu decimentru čtverečnímu, dva ticky odpovídají jedné sekundě.
+
+Model obsahuje dva typy agentů - chodce a dveře. V situačním plánu jsou černými patchi reprezentovány neprůchodné (ale průhledné) překážky, šedou reprezentují dveře. Barevné oblasti v okrajích plánu znázorňují "vstupy" do modelu. V těchto oblastech jsou vkládáni noví chodci do modelu a jsou z něj zde také odebíráni.
+
+Chodci implementují jednoduché chování pro pohyb ze startu do cíle. Cíl je určen shodnou barvu chodce. Dokud chodec neprojde dveřmi má za cíl bližší ze dvou dveří, když jimi projde, směřuje ke svému cíli.
+
+Chodci se navzájem naivně vyhýbají, pokud můžou. V případě, že uvíznou v zácpě, zcela se zastaví (ze své rychlosti na nulu) a čekají. Pokud se zácpa neuvolní, zamíří ke druhým dveřím. Při dosažení cíle je chodec odebrán z modelu.
+
+Rychlost každého chodce je náhodná z normální distribuce se střední hodnotou odpovídající 4,8 km/h. Rychlost je zespoda i shora omezena. Hustota provozu je odvozena z reálných měření a lze ji nastavit posuvníkem pedestrian-density (hodnota odpovídá střední hodnotě Poissonova rozdělení).
+
+Dveře jsou agenti umístění v linii zdi a v modelu reprezentují spíše senzor dveří. Samotné dveře jsou repreztentovány šedými patchi na obě dvě strany od senzoru. Chování dveří ovlivňují čtyři parametry:
+
+- door-width značí šířku dveří v počtu patchů, reálná hodnota je 12
+- sensor-range je poloměr dosahu senzoru spouštějícího otevírání dveří, reálná hodnota je 12
+- time-to-close je počet ticků, za které se dveře plně otevřou nebo plně zavřou, reálná hodnota je 6 (tj. 3 sekundy); díky diskrétnímu prostoru i času je otevírání dveří pouze velmi hrubou aproximací skutečnosti a některé kombinace šířky a rychlosti otevírání dveří nejsou funkční a uživatel je o tom varován
+- delay-before-closing je prodleva mezi okamžikem, kdy ustane pohyb v prostoru vymezeném sensor-range, a spuštěním zavírání dveří; ve skutečnosti je tato prodleva laicky nezměřitelná, tj. výchozí hodnota 0, ale v modelu je možné jí nastavit
+
+Parametry sensor-range a delay-before-closing lze měnit za běhu simulace a projeví se. door-width a time-to-close jsou použity pouze při počátečním nastavení modelu.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+Kromě výše zmíněných parametrů obsahuje rozhraní též chooser _obstacles_ s výchozí hodnotou "none". Tato volba umožňuje přidat kruhové překážky do osy dveří do haly (na pravou stranu), před halu, nebo na obě strany.
+
+V rozhraní jsou též čtyři monitory:
+
+- _exits per tick_ ukazuje průměrný počet chodců, kteří dosáhli cíle, vztaženo k jednomu ticku
+- _avg age of pedestrians_ zobrazuje průměrný věk (počet ticku od narození daného chodce) chodců, kteří dosáhli cíle
+- _ratio of waiting pedestrians_ zobrazuje aktuální podíl čekajících chodců vůči všem chodcům v modelu
+- _average waiting time_ zobrazuje průměrný počet ticků, který museli čekat chodci, kteří dosáhli cíle
+
+Dále jsou v rozhraní grafy:
+
+- _pedestrians by destination_ ukazuje aktuální počet chodců podle jejich cíle; je patrné, že cíle na úhlopříčce jsou prefereovanější stejně jako ve skutečnosti
+- _avg pedestrian speed_ je jednoduhcý graf průměrné rychlosti přítomných agentů, jako kontrlní úroveň slouží střední hodnota rychlosti; v počteční fázi často graf přestřelí kontrolní linii, ale rychle spadne pod ní (rychlejší chodci opustí model, pomalejší zůstávají déle a převáží), pokud se vytvoří zácpa, znatelně poklesne
+- _avg pedestrian age_ ukazuje prměrný věk aktuálních chodců, typicky se zhruba po 50 ticích ustálí; při nižší hustotě provozu je patrný velmi pomalý chodec, který táhne graf nahoru
+- _exits_ ukazuje počet chodců, kteří v daném ticku opustili model; pohybuje se v jednotkách
+
 
 ## THINGS TO NOTICE
 
+Distribuce chodců mezi cíle není stejná
 (suggested things for the user to notice while running the model)
+??co tě napadne??
 
 ## THINGS TO TRY
 
 (suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+??co tě napadne??
 
 ## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+Zajímavým rozšířením modelu by bylo přidání míst, kterým se všichni chodci snaží vyhnout, např. rozbitý a nerovný asfalt, louže. Podobně by vliv mohli mít kuřáci stojící před halou, na něž by ovšem reagovali pouze někteří chodci.
+
+Parametrizace preferencí cílů (tj. ne pevně 80 : 20) by mohla simulovat situace, které vznikají méně často, ale vznikají. Podobně preference jednoho směru nad druhým (což je spíš typické) by byla užitečná.
+
+??co tě napadne??
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+Chování chodců je omezeno možnostmi NetLoga. Například reálnější rozhled chodců je výpočetně příliš náročný, aby byl jednoduše realizovatelný. 
+
+??prostorovost agentů??
 
 ## RELATED MODELS
 
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+V modelu jsou sledovány podobné veličiny jako v dopravním modelu Traffic Grid.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Štěpán Pilař, Vojtěch Zrůst
 @#$#@#$#@
 default
 true
