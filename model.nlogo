@@ -556,6 +556,18 @@ to setup-steps
   
   set steps output
 end
+
+to-report average-exits
+  report (exits-count-cumulative / ticks)
+end
+
+to-report average-lifespan
+  report (lifespan-cumulative / exits-count-cumulative)
+end
+
+to-report average-waiting-time
+  report (waiting-cumulative / exits-count-cumulative)
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 23
@@ -798,7 +810,7 @@ MONITOR
 735
 60
 exits per tick
-precision (exits-count-cumulative / ticks) 3
+precision average-exits 3
 17
 1
 11
@@ -809,7 +821,7 @@ MONITOR
 735
 120
 avg age of pedestrians
-precision (lifespan-cumulative / exits-count-cumulative) 2
+precision average-lifespan 2
 17
 1
 11
@@ -831,7 +843,7 @@ MONITOR
 717
 230
 avg waiting time
-precision (waiting-cumulative / exits-count-cumulative) 2
+precision average-waiting-time 2
 17
 1
 11
