@@ -900,13 +900,14 @@ Dále jsou v rozhraní grafy:
 ## THINGS TO NOTICE
 
 Distribuce chodců mezi cíle není stejná
-(suggested things for the user to notice while running the model)
-??co tě napadne??
+
+Občas se stane, že se některý chodec "zasekne" u nějaké překážky, to je způsobeno zvoleným algoritmem, který jsme vybrali i s ohledem na plynulost běhu programu. Tato náhodná událost nám však pomáhá přidat do simulovaného modelu lidi kteří se zastaví aby:
+si zakouřili, aby si pohovořili se známým, nebo kvůli čekání na někoho. Přidává to tak na realističnosti situace.
 
 ## THINGS TO TRY
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
-??co tě napadne??
+Do modelu si můžete přidat překážky a sledovat jak ovlivní provoz. 
+Zdá se, že v případech menší hustoty provozu tyto překážky mohou paradoxně způsobit volnější provoz skrze dveře. Naopak při hustém provozu slouží jako další ohniska pro zácpu.
 
 ## EXTENDING THE MODEL
 
@@ -914,13 +915,13 @@ Zajímavým rozšířením modelu by bylo přidání míst, kterým se všichni 
 
 Parametrizace preferencí cílů (tj. ne pevně 80 : 20) by mohla simulovat situace, které vznikají méně často, ale vznikají. Podobně preference jednoho směru nad druhým (což je spíš typické) by byla užitečná.
 
-??co tě napadne??
+Přidat chodce, kteří neprochází skrze dveře, ale pouze prochází kolem nádraží (nebo uvnitř nádraží jdou třeba od metra do obchodu)
 
 ## NETLOGO FEATURES
 
 Chování chodců je omezeno možnostmi NetLoga. Například reálnější rozhled chodců je výpočetně příliš náročný, aby byl jednoduše realizovatelný. 
 
-??prostorovost agentů??
+Protože netlogo bere agenta jako bod, algoritmy pro kontrolu volnosti cesty se stávají náročnější. Někdy tento fakt příliš limituje možnosti.
 
 ## RELATED MODELS
 
