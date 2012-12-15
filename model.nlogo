@@ -518,10 +518,8 @@ to setup-steps
   
   if (diff < 0.5 and half > 1) [
     user-message (word "Number of ticks to open/close the door "
-                       "is too high. Widen the door or shorten "
-                       " the time for opening/closing.")
-    stop
-    clear-all
+                       "is too high, the door will behave strangely."
+                       " Widen the door or shorten the time for opening/closing.")
   ]
   
   let cumulative-diff 0
@@ -541,7 +539,7 @@ to setup-steps
   ;; iterate for each tick
   repeat time-to-close - odd [
     if last-step < half [
-      set cumulative-diff cumualtive-diff + diff
+      set cumulative-diff cumulative-diff + diff
       set last-step round cumulative-diff
       set output lput last-step output
     ]
@@ -698,7 +696,7 @@ delay-before-closing
 delay-before-closing
 0
 10
-0
+4
 1
 1
 ticks
@@ -713,7 +711,7 @@ time-to-close
 time-to-close
 1
 22
-11
+17
 1
 1
 ticks
@@ -743,7 +741,7 @@ door-width
 door-width
 7
 25
-16
+10
 1
 1
 NIL
@@ -777,7 +775,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.7
+0.25
 .05
 1
 NIL
