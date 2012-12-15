@@ -524,12 +524,14 @@ to setup-steps
     clear-all
   ]
   
+  let cumulative-diff 0
   let last-step 0
   let output []
   
   ;; odd sized door
-  if odd = 1 [
-    set last-step round diff
+  if odd = 1 [    
+    set cumulative-diff diff
+    set last-step round cumulative-diff 
     ;; if door opens in more than one tick and diff is greater than one decrease the step so that it's centered
     if time-to-close > 1 and last-step > 1 [set last-step last-step - odd]
     
@@ -539,7 +541,8 @@ to setup-steps
   ;; iterate for each tick
   repeat time-to-close - odd [
     if last-step < half [
-      set last-step round (last-step + diff)
+      set cumulative-diff cumualtive-diff + diff
+      set last-step round cumulative-diff
       set output lput last-step output
     ]
   ]
