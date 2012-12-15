@@ -574,10 +574,10 @@ to-report waiting-pedestrians-ratio
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-23
-264
-816
-748
+325
+15
+1118
+499
 130
 75
 3.0
@@ -601,10 +601,10 @@ ticks
 30.0
 
 BUTTON
-110
-45
-173
-78
+240
+15
+315
+48
 NIL
 setup
 NIL
@@ -618,10 +618,10 @@ NIL
 1
 
 BUTTON
-110
-125
-173
-158
+240
+105
+315
+138
 NIL
 go
 T
@@ -635,10 +635,10 @@ NIL
 0
 
 PLOT
-845
-76
-1045
-226
+20
+520
+445
+670
 pedestrians by destination
 NIL
 NIL
@@ -652,10 +652,10 @@ false
 PENS
 
 PLOT
-847
-279
-1047
-429
+455
+520
+895
+670
 avg pedestrian age
 NIL
 NIL
@@ -670,10 +670,10 @@ PENS
 "pen-0" 1.0 0 -16448764 true "" "ifelse any? pedestrians\n[plot mean [age] of pedestrians]\n[plot 0]"
 
 BUTTON
-105
-85
-180
-118
+240
+60
+315
+93
 go once
 go
 NIL
@@ -687,10 +687,10 @@ NIL
 0
 
 SLIDER
-220
-45
-410
-78
+15
+60
+205
+93
 delay-before-closing
 delay-before-closing
 0
@@ -702,10 +702,10 @@ ticks
 HORIZONTAL
 
 SLIDER
-220
-90
-410
-123
+15
+105
+205
+138
 time-to-close
 time-to-close
 1
@@ -717,10 +717,10 @@ ticks
 HORIZONTAL
 
 SLIDER
-220
-135
-410
-168
+15
+150
+205
+183
 sensor-range
 sensor-range
 3
@@ -732,10 +732,10 @@ patches
 HORIZONTAL
 
 SLIDER
-220
-180
-410
-213
+15
+195
+205
+228
 door-width
 door-width
 7
@@ -747,10 +747,10 @@ NIL
 HORIZONTAL
 
 PLOT
-1110
-80
-1310
-230
+1140
+350
+1340
+500
 avg pedestrian speed
 NIL
 NIL
@@ -766,35 +766,35 @@ PENS
 "pen-1" 1.0 0 -5825686 true "" "ifelse any? pedestrians\n[plot mean [speed] of pedestrians]\n[plot 0]"
 
 SLIDER
-420
-45
-592
-78
+15
+15
+205
+48
 pedestrian-density
 pedestrian-density
 .25
 1
-0.65
+0.7
 .05
 1
 NIL
 HORIZONTAL
 
 CHOOSER
-425
-170
-563
-215
+15
+240
+153
+285
 obstacles
 obstacles
 "none" "inside" "outside" "both"
 0
 
 PLOT
-1085
-255
-1285
-405
+905
+520
+1340
+670
 exits 
 NIL
 NIL
@@ -809,10 +809,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot exits-count\nset exits-count 0"
 
 MONITOR
-615
-15
-735
-60
+20
+315
+160
+360
 exits per tick
 precision average-exits 3
 17
@@ -820,10 +820,10 @@ precision average-exits 3
 11
 
 MONITOR
-615
-75
-735
-120
+20
+370
+160
+415
 avg age of pedestrians
 precision average-lifespan 2
 17
@@ -831,10 +831,10 @@ precision average-lifespan 2
 11
 
 MONITOR
-615
-130
-777
 175
+315
+315
+360
 ratio of waiting pedestrians
 precision waiting-pedestrians-ratio 2
 17
@@ -842,10 +842,10 @@ precision waiting-pedestrians-ratio 2
 11
 
 MONITOR
-615
-185
-717
-230
+175
+370
+315
+415
 avg waiting time
 precision average-waiting-time 2
 17
