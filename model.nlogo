@@ -254,21 +254,22 @@ to walk
       ;; because the algorithm is slow and cause some serious slowness in the animation
       ask patches in-cone 5 90 [
           
-          if pcolor = black or pcolor = grey [
+          if pcolor = black [
             set no-obstacle false
           ]
         
       ]
       
+      ;; check obstacles
       ask patches in-cone 15 10 [
           
-          if pcolor = black or pcolor = grey [
+          if pcolor = black [
             set no-obstacle false
           ]
           
         
       ]
-      
+            
 
       ifelse obstr-peds-count = 0 and no-obstacle = true [
        set free-way-found true 
@@ -286,19 +287,31 @@ to walk
       
     ]
       
-   
+    ;; save speed of pedestrian
+    let tmpSpeed speed
+    
+    ;; if pedestrians distance is between his speed and sensor range, and other contitions indicates that pedestrian can't go through
+    ;; slow him down and let him aproach to the sensor range
+    if (distance target-doors < speed and distance target-doors > sensor-range) and 
+       ([state] of target-doors = 0 or ([state] of target-doors = 1 and [current-step] of target-doors < 6)) [
+        let diff speed - sensor-range + 1
+        set speed diff
+    ]
     
     
-    ifelse angle >= max-check-radius [          ;; if there is no space on the max deg radius
+    ifelse angle >= max-check-radius or
+           (distance target-doors <= sensor-range and
+           ([state] of target-doors = 0 or ([state] of target-doors = 1 and [current-step] of target-doors < 3))) [          ;; if there is no space on the max deg radius or the doors are right before pedestrian and is closed
       ;;wait
       set heading direct
       set ticks-waiting ticks-waiting + 1
-    ] [                                         ;; free path found
+    ] [
+      ;; free path found
       fd speed
       set waiting-cumulative waiting-cumulative + ticks-waiting
       set ticks-waiting 0
     ]
-    
+    set speed tmpSpeed
     
     ask patch-here [
       if pcolor = [color] of myself
@@ -711,7 +724,7 @@ time-to-close
 time-to-close
 1
 22
-17
+12
 1
 1
 ticks
@@ -726,7 +739,7 @@ sensor-range
 sensor-range
 3
 20
-12
+5
 1
 1
 patches
@@ -741,7 +754,7 @@ door-width
 door-width
 7
 25
-10
+12
 1
 1
 NIL
