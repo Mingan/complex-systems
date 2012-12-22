@@ -43,7 +43,7 @@ to setup-destinations
     ;; color [x, y] [x, y] [allowed destinations with probability distribution 8 : 2]
     [green -70 62 -60 75 [pink blue]]
     [red -130 22 -117 32 [pink blue]]
-    [blue 97 22 110 32 [green red]] 
+    [blue 117 22 130 32 [green red]] 
     [pink 120 -75 130 -62 [green red]]
   ]
   
@@ -82,15 +82,23 @@ to setup-doors
     
     set width door-width
     
+    
     set state 0
     set current-step 0
+    
+    let door-color white
+    ifelse do-door [
+      set door-color grey
+    ] [
+      set state 2
+    ]
     
     ;; paint door
     let y ycor
     let x xcor
     let half-width ((width - 1) / 2)
     ask patches with [pxcor = x and pycor >= floor(y - half-width) and pycor <= floor(y + half-width)] [
-      set pcolor grey
+      set pcolor door-color
     ]
   ]
 end
@@ -103,7 +111,7 @@ end
 to go
   add-pedestrians
   age-pedestrians
-  operate-doors
+  if do-door [operate-doors]
   walk
   tick
 end
@@ -709,7 +717,7 @@ delay-before-closing
 delay-before-closing
 0
 10
-4
+0
 1
 1
 ticks
@@ -724,7 +732,7 @@ time-to-close
 time-to-close
 1
 22
-12
+6
 1
 1
 ticks
@@ -739,7 +747,7 @@ sensor-range
 sensor-range
 3
 20
-5
+12
 1
 1
 patches
@@ -788,7 +796,7 @@ pedestrian-density
 pedestrian-density
 .25
 1
-0.25
+1
 .05
 1
 NIL
@@ -865,6 +873,17 @@ precision average-waiting-time 2
 17
 1
 11
+
+SWITCH
+210
+245
+313
+278
+do-door
+do-door
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
